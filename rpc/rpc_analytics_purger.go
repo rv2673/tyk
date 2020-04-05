@@ -55,12 +55,11 @@ type GeoData struct {
 	} `maxminddb:"location"`
 }
 
-const analyticsKeyName = "tyk-system-analytics"
-
 // RPCPurger will purge analytics data into a Mongo database, requires that the Mongo DB string is specified
 // in the Config object
 type Purger struct {
-	Store storage.Handler
+	Store        storage.Handler
+	AnalyticsKey string
 }
 
 // Connect Connects to RPC
@@ -111,7 +110,7 @@ func (r *Purger) PurgeCache() {
 		return
 	}
 
-	analyticsValues := r.Store.GetAndDeleteSet(analyticsKeyName)
+	analyticsValues := r.Store.GetAndDeleteSet(r.AnalyticsKey)
 	if len(analyticsValues) == 0 {
 		return
 	}

@@ -202,6 +202,7 @@ func setupGlobals(ctx context.Context) {
 				store := storage.RedisCluster{KeyPrefix: "analytics-"}
 				purger := rpc.Purger{
 					Store: &store,
+					AnalyticsKey: config.Global().AnalyticsConfig.AnalyticsKey,
 				}
 				purger.Connect()
 				go purger.PurgeLoop(ctx)

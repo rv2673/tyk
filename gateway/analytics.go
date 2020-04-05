@@ -91,8 +91,6 @@ type GeoData struct {
 	} `maxminddb:"location"`
 }
 
-const analyticsKeyName = "tyk-system-analytics"
-
 const (
 	recordsBufferFlushInterval       = 200 * time.Millisecond
 	recordsBufferForcedFlushInterval = 1 * time.Second
@@ -257,7 +255,7 @@ func (r *RedisAnalyticsHandler) recordWorker() {
 			// check if channel was closed and it is time to exit from worker
 			if !ok {
 				// send what is left in buffer
-				r.Store.AppendToSetPipelined(analyticsKeyName, recordsBuffer)
+				r.Store.AppendToSetPipelined(r.globalConf.AnalyticsConfig.AnalyticsKey, recordsBuffer)
 				return
 			}
 
@@ -312,7 +310,7 @@ func (r *RedisAnalyticsHandler) recordWorker() {
 
 		// send data to Redis and reset buffer
 		if len(recordsBuffer) > 0 && (readyToSend || time.Since(lastSentTs) >= recordsBufferForcedFlushInterval) {
-			r.Store.AppendToSetPipelined(analyticsKeyName, recordsBuffer)
+			r.Store.AppendToSetPipelined(r.globalConf.AnalyticsConfig.AnalyticsKey, recordsBuffer)
 			recordsBuffer = recordsBuffer[:0]
 			lastSentTs = time.Now()
 		}
