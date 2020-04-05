@@ -198,8 +198,8 @@ func (r *RedisAnalyticsHandler) Init(globalConf config.Config) {
 
 	analytics.Store.Connect()
 
-	ps := config.Global().AnalyticsConfig.PoolSize
-	recordsBufferSize := config.Global().AnalyticsConfig.RecordsBufferSize
+	ps := globalConf.AnalyticsConfig.PoolSize
+	recordsBufferSize := globalConf.AnalyticsConfig.RecordsBufferSize
 	r.workerBufferSize = recordsBufferSize / uint64(ps)
 	log.WithField("workerBufferSize", r.workerBufferSize).Debug("Analytics pool worker buffer size")
 
@@ -255,7 +255,7 @@ func (r *RedisAnalyticsHandler) recordWorker() {
 			// check if channel was closed and it is time to exit from worker
 			if !ok {
 				// send what is left in buffer
-				r.Store.AppendToSetPipelined(r.globalConf.AnalyticsConfig.AnalyticsKey, recordsBuffer)
+				r.Store.AppendToSetsPipelined(r.globalConf.AnalyticsConfig.AnalyticsKeys, recordsBuffer)
 				return
 			}
 
@@ -310,12 +310,14 @@ func (r *RedisAnalyticsHandler) recordWorker() {
 
 		// send data to Redis and reset buffer
 		if len(recordsBuffer) > 0 && (readyToSend || time.Since(lastSentTs) >= recordsBufferForcedFlushInterval) {
-			r.Store.AppendToSetPipelined(r.globalConf.AnalyticsConfig.AnalyticsKey, recordsBuffer)
+			r.Store.AppendToSetsPipelined(r.globalConf.AnalyticsConfig.AnalyticsKeys, recordsBuffer)
 			recordsBuffer = recordsBuffer[:0]
 			lastSentTs = time.Now()
 		}
 	}
 }
+
+
 
 func DurationToMillisecond(d time.Duration) float64 {
 	return float64(d) / 1e6

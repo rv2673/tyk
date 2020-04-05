@@ -172,6 +172,10 @@ func setupGlobals(ctx context.Context) {
 		mainLog.Fatal("Analytics requires Redis Storage backend, please enable Redis in the tyk.conf file.")
 	}
 
+	if config.Global().EnableAnalytics && len(config.Global().AnalyticsConfig.AnalyticsKeys) == 0 {
+		mainLog.Fatal("Analytics requires at least one AnalyticsKeys to be specified.")
+	}
+
 	// Initialise our Host Checker
 	healthCheckStore := storage.RedisCluster{KeyPrefix: "host-checker:"}
 	InitHostCheckManager(ctx, &healthCheckStore)
@@ -195,14 +199,13 @@ func setupGlobals(ctx context.Context) {
 		analytics.Store = &analyticsStore
 		analytics.Init(globalConf)
 
-		if config.Global().AnalyticsConfig.Type == "rpc" {
+		if globalConf.AnalyticsConfig.Type == "rpc" {
 			mainLog.Debug("Using RPC cache purge")
-
 			rpcPurgeOnce.Do(func() {
 				store := storage.RedisCluster{KeyPrefix: "analytics-"}
 				purger := rpc.Purger{
 					Store: &store,
-					AnalyticsKey: config.Global().AnalyticsConfig.AnalyticsKey,
+					AnalyticsKey: globalConf.AnalyticsConfig.AnalyticsKeys[0],
 				}
 				purger.Connect()
 				go purger.PurgeLoop(ctx)

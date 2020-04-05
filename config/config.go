@@ -38,8 +38,8 @@ var (
 			Port:    6379,
 		},
 		AnalyticsConfig: AnalyticsConfigConfig{
-			IgnoredIPs:   make([]string, 0),
-			AnalyticsKey: "tyk-system-analytics",
+			IgnoredIPs:             make([]string, 0),
+			AnalyticsKeys:          []string{"tyk-system-analytics"},
 		},
 		DnsCache: DnsCacheConfig{
 			Enabled:                   false,
@@ -110,7 +110,7 @@ type NormaliseURLPatterns struct {
 }
 
 type AnalyticsConfigConfig struct {
-	AnalyticsKey            string              `json:"analytics_key"`
+	AnalyticsKeys           []string            `json:"analytics_keys"`
 	Type                    string              `json:"type"`
 	IgnoredIPs              []string            `json:"ignored_ips"`
 	EnableDetailedRecording bool                `json:"enable_detailed_recording"`

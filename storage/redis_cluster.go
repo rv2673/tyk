@@ -1004,20 +1004,30 @@ func (r *RedisCluster) GetListRange(keyName string, from, to int64) ([]string, e
 }
 
 func (r *RedisCluster) AppendToSetPipelined(key string, values [][]byte) {
+	r.AppendToSetsPipelined([]string{key}, values)
+}
+
+func (r *RedisCluster) AppendToSetsPipelined(keys []string, values [][]byte) {
 	if len(values) == 0 {
 		return
 	}
 
-	fixedKey := r.fixKey(key)
-	if err := r.up(); err != nil {
-		log.Debug(err)
-		return
+	fixedKeys := make([]string, len(keys))
+	for i, v := range keys {
+		fixedKeys[i] = r.fixKey(v)
+		if err := r.up(); err != nil {
+			log.Debug(err)
+			return
+		}
 	}
+
 	client := r.singleton()
 
 	pipe := client.Pipeline()
 	for _, val := range values {
-		pipe.RPush(fixedKey, val)
+		for _, key := range fixedKeys {
+			pipe.RPush(key, val)
+		}
 	}
 
 	if _, err := pipe.Exec(); err != nil {
@@ -1026,10 +1036,12 @@ func (r *RedisCluster) AppendToSetPipelined(key string, values [][]byte) {
 
 	// if we need to set an expiration time
 	if storageExpTime := int64(config.Global().AnalyticsConfig.StorageExpirationTime); storageExpTime != int64(-1) {
-		// If there is no expiry on the analytics set, we should set it.
-		exp, _ := r.GetExp(key)
-		if exp == -1 {
-			r.SetExp(key, storageExpTime)
+		// If there is no expiry on the analytics sets, we should set it.
+		for _, key := range keys {
+			exp, _ := r.GetExp(key)
+			if exp == -1 {
+				r.SetExp(key, storageExpTime)
+			}
 		}
 	}
 }
